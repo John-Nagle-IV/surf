@@ -2,6 +2,7 @@
 VERSION = 1.8
 
 # Customize below to fit your system
+export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/usr/lib/x86_64-linux-gnu
 
 # paths
 PREFIX = /usr/local
