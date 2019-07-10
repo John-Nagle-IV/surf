@@ -1823,6 +1823,15 @@ main(int argc, char *argv[])
 	} ARGEND;
 	if (argc > 0)
 		arg.v = argv[0];
+#ifdef HOMEPAGE
+    if (arg.v == NULL) {
+        if (strlen(HOMEPAGE) > 0) {
+            arg.v = HOMEPAGE;
+        } else {
+            arg.v = "about:blank";
+        }
+    }
+#endif
 
 	setup();
 	c = newclient();
