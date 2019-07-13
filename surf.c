@@ -2,6 +2,7 @@
  *
  * To understand surf, start reading main().
  */
+#include <ctype.h>
 #include <signal.h>
 #include <X11/X.h>
 #include <X11/Xatom.h>
@@ -217,6 +218,10 @@ static void usage(void);
 static void windowobjectcleared(GtkWidget *w, WebKitWebFrame *frame,
                                 JSContextRef js, JSObjectRef win, Client *c);
 static void zoom(Client *c, const Arg *arg);
+
+static char to_hex(char code);
+static char *url_encode(char *str);
+static void ducksearch(const Arg *arg);
 
 /* configuration, allows nested code to access above variables */
 #include "config.h"
@@ -1721,6 +1726,47 @@ zoom(Client *c, const Arg *arg)
 	}
 }
 
+/* Converts an integer value to its hex character*/
+static char
+to_hex(char code) {
+	static char hex[] = "0123456789abcdef";
+	return hex[code & 15];
+}
+
+/* Returns a url-encoded version of str */
+/* IMPORTANT: be sure to free() the returned string after use */
+static char *
+url_encode(char *str) {
+	char *pstr = str, *buf = malloc(strlen(str) * 3 + 1), *pbuf = buf;
+	while (*pstr) {
+		if (isalnum(*pstr) || *pstr == '-' || *pstr == '_' || *pstr == '.' || *pstr == '~')
+			*pbuf++ = *pstr;
+		else if (*pstr == ' ')
+			*pbuf++ = '+';
+		else
+			*pbuf++ = '%', *pbuf++ = to_hex(*pstr >> 4), *pbuf++ = to_hex(*pstr & 15);
+		pstr++;
+	}
+	*pbuf = '\0';
+	return buf;
+}
+
+static void
+ducksearch(const Arg *arg) {
+	char *query = (char *)arg->v;
+	if (strncmp(HOMEPAGE, query, strlen(HOMEPAGE)) == 0) {
+		loaduri(clients, arg);
+	} else {
+		const char *searchengine = "https://duckduckgo.com/?q=%s";
+		char *encoded = url_encode(query);
+		char b[strlen(encoded) + strlen(searchengine) + 1];
+		sprintf(b, searchengine, encoded);
+		Arg a = { .v = b };
+		loaduri(clients, &a);
+		free(encoded);
+	}
+}
+
 int
 main(int argc, char *argv[])
 {
@@ -1728,6 +1774,7 @@ main(int argc, char *argv[])
 	Client *c;
 
 	memset(&arg, 0, sizeof(arg));
+	int q = 0;
 
 	/* command line args */
 	ARGBEGIN {
@@ -1794,6 +1841,9 @@ main(int argc, char *argv[])
 	case 'P':
 		enableplugins = 1;
 		break;
+	case 'q':
+		q = 1;
+		break;
 	case 'r':
 		scriptfile = EARGF(usage());
 		break;
@@ -1824,18 +1874,20 @@ main(int argc, char *argv[])
 	if (argc > 0)
 		arg.v = argv[0];
 #ifdef HOMEPAGE
-    if (arg.v == NULL) {
-        if (strlen(HOMEPAGE) > 0) {
-            arg.v = HOMEPAGE;
-        } else {
-            arg.v = "about:blank";
-        }
-    }
+	if (arg.v == NULL) {
+		if (strlen(HOMEPAGE) > 0) {
+			arg.v = HOMEPAGE;
+		} else {
+			arg.v = "about:blank";
+		}
+	}
 #endif
 
 	setup();
 	c = newclient();
-	if (arg.v)
+	if (q)
+		ducksearch(&arg);
+	else if (arg.v)
 		loaduri(clients, &arg);
 	else
 		updatetitle(c);
