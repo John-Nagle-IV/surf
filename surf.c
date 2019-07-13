@@ -37,7 +37,7 @@ char *argv0;
 #define COOKIEJAR_TYPE          (cookiejar_get_type ())
 #define COOKIEJAR(obj)          (G_TYPE_CHECK_INSTANCE_CAST ((obj), COOKIEJAR_TYPE, CookieJar))
 
-enum { AtomFind, AtomGo, AtomUri, AtomLast };
+enum { AtomFind, AtomGo, AtomUri, AtomSearch, AtomLast };
 enum {
 	ClkDoc   = WEBKIT_HIT_TEST_RESULT_CONTEXT_DOCUMENT,
 	ClkLink  = WEBKIT_HIT_TEST_RESULT_CONTEXT_LINK,
@@ -1244,6 +1244,9 @@ processx(GdkXEvent *e, GdkEvent *event, gpointer d)
 				arg.v = getatom(c, AtomGo);
 				loaduri(c, &arg);
 				return GDK_FILTER_REMOVE;
+			} else if (ev->atom == atoms[AtomSearch]) {
+                ducksearch(getatom(c, AtomSearch));
+				return GDK_FILTER_REMOVE;
 			}
 		}
 	}
@@ -1345,6 +1348,7 @@ setup(void)
 	atoms[AtomFind] = XInternAtom(dpy, "_SURF_FIND", False);
 	atoms[AtomGo] = XInternAtom(dpy, "_SURF_GO", False);
 	atoms[AtomUri] = XInternAtom(dpy, "_SURF_URI", False);
+	atoms[AtomSearch] = XInternAtom(dpy, "_SURF_SEARCH", False);
 
 	/* dirs and files */
 	cookiefile = buildfile(cookiefile);

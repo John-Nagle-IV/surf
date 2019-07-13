@@ -35,6 +35,14 @@ static Bool loadimages            = TRUE;
 static Bool hidebackground        = FALSE;
 static Bool allowgeolocation      = TRUE;
 
+#define SEARCH() { \
+    .v = (const char *[]){ "/bin/sh", "-c", \
+         "xprop -id $1 -f $2 8s -set $2 \"" \
+         "$(dmenu -fn monospace:size=16 -p Search: -w $1 < /dev/null)\"", \
+         "surf-search", winid, "_SURF_SEARCH", NULL \
+    } \
+}
+
 #define SETPROP(p, q) { \
 	.v = (char *[]){ "/bin/sh", "-c", \
 	     "prop=\"`xprop -id $2 $0 " \
@@ -75,6 +83,8 @@ static SiteStyle styles[] = {
 	{ ".*",                 "default.css" },
 };
 
+#define HOMEPAGE "https://start.duckduckgo.com"
+
 #define MODKEY GDK_CONTROL_MASK
 
 /* hotkeys */
@@ -99,6 +109,7 @@ static Key keys[] = {
 
 	{ MODKEY,               GDK_l,      navigate,   { .i = +1 } },
 	{ MODKEY,               GDK_h,      navigate,   { .i = -1 } },
+	{ MODKEY|GDK_SHIFT_MASK,GDK_h,      loaduri,    { .v = HOMEPAGE } },
 
 	{ MODKEY,               GDK_j,      scroll_v,   { .i = +1 } },
 	{ MODKEY,               GDK_k,      scroll_v,   { .i = -1 } },
@@ -112,6 +123,7 @@ static Key keys[] = {
 	{ MODKEY,               GDK_o,      source,     { 0 } },
 	{ MODKEY|GDK_SHIFT_MASK,GDK_o,      inspector,  { 0 } },
 
+	{ MODKEY,               GDK_q,      spawn,      SEARCH() },
 	{ MODKEY,               GDK_g,      spawn,      SETPROP("_SURF_URI", "_SURF_GO") },
 	{ MODKEY,               GDK_f,      spawn,      SETPROP("_SURF_FIND", "_SURF_FIND") },
 	{ MODKEY,               GDK_slash,  spawn,      SETPROP("_SURF_FIND", "_SURF_FIND") },
@@ -140,6 +152,3 @@ static Button buttons[] = {
 	{ ClkAny,       0,          8,      navigate,       { .i = -1 } },
 	{ ClkAny,       0,          9,      navigate,       { .i = +1 } },
 };
-
-
-#define HOMEPAGE "https://start.duckduckgo.com"
