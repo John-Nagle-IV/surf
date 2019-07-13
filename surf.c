@@ -220,8 +220,8 @@ static void windowobjectcleared(GtkWidget *w, WebKitWebFrame *frame,
 static void zoom(Client *c, const Arg *arg);
 
 static char to_hex(char code);
-static char *url_encode(char *str);
-static void ducksearch(const Arg *arg);
+static char *url_encode(const char *str);
+static void ducksearch(const char *query);
 
 /* configuration, allows nested code to access above variables */
 #include "config.h"
@@ -1736,8 +1736,8 @@ to_hex(char code) {
 /* Returns a url-encoded version of str */
 /* IMPORTANT: be sure to free() the returned string after use */
 static char *
-url_encode(char *str) {
-	char *pstr = str, *buf = malloc(strlen(str) * 3 + 1), *pbuf = buf;
+url_encode(const char *str) {
+	char *pstr = (char *)str, *buf = malloc(strlen(str) * 3 + 1), *pbuf = buf;
 	while (*pstr) {
 		if (isalnum(*pstr) || *pstr == '-' || *pstr == '_' || *pstr == '.' || *pstr == '~')
 			*pbuf++ = *pstr;
@@ -1752,19 +1752,14 @@ url_encode(char *str) {
 }
 
 static void
-ducksearch(const Arg *arg) {
-	char *query = (char *)arg->v;
-	if (strncmp(HOMEPAGE, query, strlen(HOMEPAGE)) == 0) {
-		loaduri(clients, arg);
-	} else {
-		const char *searchengine = "https://duckduckgo.com/?q=%s";
-		char *encoded = url_encode(query);
-		char b[strlen(encoded) + strlen(searchengine) + 1];
-		sprintf(b, searchengine, encoded);
-		Arg a = { .v = b };
-		loaduri(clients, &a);
-		free(encoded);
-	}
+ducksearch(const char *query) {
+    const char *searchengine = "https://duckduckgo.com/?q=%s";
+    char *encoded = url_encode(query);
+    char b[strlen(encoded) + strlen(searchengine) + 1];
+    sprintf(b, searchengine, encoded);
+    Arg a = { .v = b };
+    loaduri(clients, &a);
+    free(encoded);
 }
 
 int
@@ -1886,7 +1881,12 @@ main(int argc, char *argv[])
 	setup();
 	c = newclient();
 	if (q)
-		ducksearch(&arg);
+        if (strncmp(HOMEPAGE, arg.v, strlen(HOMEPAGE)) == 0) {
+            // If we're just passing in the homepage as arg, go there
+            loaduri(clients, &arg);
+        } else {
+            ducksearch(arg.v);
+        }
 	else if (arg.v)
 		loaduri(clients, &arg);
 	else
